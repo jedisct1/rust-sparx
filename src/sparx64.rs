@@ -61,16 +61,14 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
                 LittleEndian::write_u32(&mut block[4 * b..], tmp);
             }
         }
-        let mut x = [0u32; 2];
-        x[0] = LittleEndian::read_u32(&block[4 * 0..]);
-        x[1] = LittleEndian::read_u32(&block[4 * 1..]);
-        let tmp = ((x[0] as u16) ^ ((x[0] >> 16) as u16)).rotate_left(8);
+        let x0 = LittleEndian::read_u32(&block[4 * 0..]);
+        let mut x1 = LittleEndian::read_u32(&block[4 * 1..]);
+        let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
-        x[1] = ((((x[1] as u16) ^ (x[0] as u16)) as u32) |
-                ((((x[1] >> 16) as u16) ^ ((x[0] >> 16) as u16)) as u32) << 16) ^
-               tmp;
-        LittleEndian::write_u32(&mut block[4 * 0..], x[1]);
-        LittleEndian::write_u32(&mut block[4 * 1..], x[0]);
+        x1 = ((((x1 as u16) ^ (x0 as u16)) as u32) |
+              ((((x1 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+        LittleEndian::write_u32(&mut block[4 * 0..], x1);
+        LittleEndian::write_u32(&mut block[4 * 1..], x0);
     }
     for b in 0..2 {
         let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];

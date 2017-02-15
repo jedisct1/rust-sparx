@@ -63,24 +63,21 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
                 LittleEndian::write_u32(&mut block[4 * b..], tmp);
             }
         }
-        let mut x = [0u32; 4];
-        x[0] = LittleEndian::read_u32(&block[4 * 0..]);
-        x[1] = LittleEndian::read_u32(&block[4 * 1..]);
-        x[2] = LittleEndian::read_u32(&block[4 * 2..]);
-        x[3] = LittleEndian::read_u32(&block[4 * 3..]);
-        let tmp = ((x[0] as u16) ^ ((x[0] >> 16) as u16) ^ (x[1] as u16) ^ ((x[1] >> 16) as u16))
+        let x0 = LittleEndian::read_u32(&block[4 * 0..]);
+        let x1 = LittleEndian::read_u32(&block[4 * 1..]);
+        let mut x2 = LittleEndian::read_u32(&block[4 * 2..]);
+        let mut x3 = LittleEndian::read_u32(&block[4 * 3..]);
+        let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16))
             .rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
-        x[2] = ((((x[2] as u16) ^ (x[1] as u16)) as u32) |
-                ((((x[2] >> 16) as u16) ^ ((x[0] >> 16) as u16)) as u32) << 16) ^
-               tmp;
-        x[3] = ((((x[3] as u16) ^ (x[0] as u16)) as u32) |
-                ((((x[3] >> 16) as u16) ^ ((x[1] >> 16) as u16)) as u32) << 16) ^
-               tmp;
-        LittleEndian::write_u32(&mut block[4 * 0..], x[2]);
-        LittleEndian::write_u32(&mut block[4 * 1..], x[3]);
-        LittleEndian::write_u32(&mut block[4 * 2..], x[0]);
-        LittleEndian::write_u32(&mut block[4 * 3..], x[1]);
+        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32) |
+              ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32) |
+              ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+        LittleEndian::write_u32(&mut block[4 * 0..], x2);
+        LittleEndian::write_u32(&mut block[4 * 1..], x3);
+        LittleEndian::write_u32(&mut block[4 * 2..], x0);
+        LittleEndian::write_u32(&mut block[4 * 3..], x1);
     }
     for b in 0..4 {
         let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];
