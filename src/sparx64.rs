@@ -2,7 +2,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 pub const BLOCK_SIZE: usize = 8;
 pub const KEY_SIZE: usize = 16;
-pub const NONCE_SIZE: usize = 4 + KEY_SIZE;
+pub const NONCE_SIZE: usize = (BLOCK_SIZE - 4) + KEY_SIZE;
 
 const ROUNDS: usize = 24;
 const ROUNDS_PER_STEP: usize = 3;
@@ -91,8 +91,8 @@ pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE
     let ks = key_schedule_encrypt(&key2);
     let full_blocks_count = (buf.len() / BLOCK_SIZE) as u64;
     let mut ib = [0u8; BLOCK_SIZE];
-    let mut n = 0;
     let nc = (LittleEndian::read_u32(nonce) as u64) << 32;
+    let mut n = 0;
     for i in 0..full_blocks_count {
         LittleEndian::write_u64(&mut ib, nc.wrapping_add(i));
         encrypt_block(&mut ib, &ks);
