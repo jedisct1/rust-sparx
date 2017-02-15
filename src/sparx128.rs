@@ -53,12 +53,11 @@ pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
 }
 
 pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
-    let mut j = 0;
+    let mut ksi = ks.iter();
     for _ in 0..STEPS {
         for b in 0..4 {
             for _ in 0..ROUNDS_PER_STEP {
-                let mut tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];
-                j += 1;
+                let mut tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ksi.next().unwrap();
                 spec_key(&mut tmp);
                 LittleEndian::write_u32(&mut block[4 * b..], tmp);
             }
@@ -80,8 +79,7 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
         LittleEndian::write_u32(&mut block[4 * 3..], x1);
     }
     for b in 0..4 {
-        let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];
-        j += 1;
+        let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ksi.next().unwrap();
         LittleEndian::write_u32(&mut block[4 * b..], tmp);
     }
 }
