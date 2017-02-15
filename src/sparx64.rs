@@ -8,76 +8,77 @@ const ROUNDS: usize = 24;
 const ROUNDS_PER_STEP: usize = 3;
 const STEPS: usize = ROUNDS / ROUNDS_PER_STEP;
 
-pub type KeySchedule = [u16; STEPS * 12 + 4];
+pub type KeySchedule = [u32; ROUNDS_PER_STEP * (2 * STEPS + 1)];
 
 #[inline]
-fn spec_key(left: &mut u16, right: &mut u16) {
-    *left = (*left).rotate_right(7).wrapping_add(*right);
-    *right = (*right).rotate_left(2) ^ *left;
+fn spec_key(k: &mut u32) {
+    let mut left = *k as u16;
+    let mut right = (*k >> 16) as u16;
+    left = left.rotate_right(7).wrapping_add(right);
+    right = right.rotate_left(2) ^ left;
+    *k = (left as u32) | ((right as u32) << 16)
+}
+
+#[inline]
+fn key_perm(k: &mut [u32; 4], c: u16) {
+    spec_key(&mut k[0]);
+    k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32) |
+           (((k[1] >> 16) as u16).wrapping_add((k[0] >> 16) as u16) as u32) << 16;
+    k[3] = ((k[3] as u16) as u32) | (((k[3] >> 16) as u16).wrapping_add(c) as u32) << 16;
+    let tmp = k[3];
+    k[3] = k[2];
+    k[2] = k[1];
+    k[1] = k[0];
+    k[0] = tmp;
 }
 
 pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
-    let mut ks = [0u16; STEPS * 12 + 4];
-    for (i, subkey) in ks.iter_mut().enumerate().take(6) {
-        *subkey = LittleEndian::read_u16(&key[i * 2..]);
+    let mut ks = [0u32; ROUNDS_PER_STEP * (2 * STEPS + 1)];
+    let mut k = [0u32; 4];
+    for (i, kp) in k.iter_mut().enumerate() {
+        *kp = LittleEndian::read_u32(&key[i * 4..]);
     }
-    let mut t0 = LittleEndian::read_u16(&key[6 * 2..]);
-    let mut t1 = LittleEndian::read_u16(&key[7 * 2..]);
-    for i in 1..(2 * STEPS) {
-        ks[6 * i + 0] = t0;
-        ks[6 * i + 1] = t1.wrapping_add(i as u16);
-        t0 = ks[6 * (i - 1) + 0];
-        t1 = ks[6 * (i - 1) + 1];
-        spec_key(&mut t0, &mut t1);
-        ks[6 * i + 2] = t0;
-        ks[6 * i + 3] = t1;
-        ks[6 * i + 4] = t0.wrapping_add(ks[6 * (i - 1) + 2]);
-        ks[6 * i + 5] = t1.wrapping_add(ks[6 * (i - 1) + 3]);
-        t0 = ks[6 * (i - 1) + 4];
-        t1 = ks[6 * (i - 1) + 5];
+    let mut j = 0;
+    for c in 0..(2 * STEPS + 1) {
+        for &ksp in k.iter().take(ROUNDS_PER_STEP) {
+            ks[j] = ksp;
+            j += 1;
+        }
+        key_perm(&mut k, c as u16 + 1);
     }
-    ks[6 * 2 * STEPS + 0] = t0;
-    ks[6 * 2 * STEPS + 1] = t1.wrapping_add(2 * STEPS as u16);
-    t0 = ks[6 * (2 * STEPS - 1) + 0];
-    t1 = ks[6 * (2 * STEPS - 1) + 1];
-    spec_key(&mut t0, &mut t1);
-    ks[6 * 2 * STEPS + 2] = t0;
-    ks[6 * 2 * STEPS + 3] = t1;
     ks
 }
 
-#[inline]
-fn round(left: &mut u32, right: &mut u32, ks: &[u16], i: usize) {
-    for j in 0..3 {
-        *left ^= (ks[i * 12 + j * 2] as u32) | ((ks[i * 12 + j * 2 + 1] as u32) << 16);
-        let mut b0_l = *left as u16;
-        let mut b0_r = (*left >> 16) as u16;
-        spec_key(&mut b0_l, &mut b0_r);
-        *left = (b0_l as u32) | ((b0_r as u32) << 16);
-    }
-    for j in 3..6 {
-        *right ^= (ks[i * 12 + j * 2] as u32) | ((ks[i * 12 + j * 2 + 1] as u32) << 16);
-        let mut b1_l = *right as u16;
-        let mut b1_r = (*right >> 16) as u16;
-        spec_key(&mut b1_l, &mut b1_r);
-        *right = (b1_l as u32) | ((b1_r as u32) << 16);
-    }
-    let tmp = *left;
-    *right ^= *left ^ (*left).rotate_left(8) ^ (*left).rotate_right(8);
-    *left = *right;
-    *right = tmp;
-}
-
 pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
-    let mut left = LittleEndian::read_u32(&block[0..]);
-    let mut right = LittleEndian::read_u32(&block[4..]);
-    for i in 0..STEPS {
-        round(&mut left, &mut right, ks, i)
+    let mut j = 0;
+    for _ in 0..STEPS {
+        for b in 0..2 {
+            for _ in 0..ROUNDS_PER_STEP {
+                let mut tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];
+                j += 1;
+                spec_key(&mut tmp);
+                LittleEndian::write_u32(&mut block[4 * b..], tmp);
+            }
+        }
+        let mut x = [0u32; 2];
+        for (i, xp) in x.iter_mut().enumerate() {
+            *xp = LittleEndian::read_u32(&block[4 * i..]);
+        }
+        let tmp = ((x[0] as u16) ^ ((x[0] >> 16) as u16)).rotate_left(8);
+        let tmp = (tmp as u32) | ((tmp as u32) << 16);
+        x[1] = ((((x[1] as u16) ^ (x[0] as u16)) as u32) |
+                ((((x[1] >> 16) as u16) ^ ((x[0] >> 16) as u16)) as u32) << 16) ^
+               tmp;
+        x.swap(0, 1);
+        for (i, xp) in x.iter().enumerate() {
+            LittleEndian::write_u32(&mut block[4 * i..], *xp);
+        }
     }
-    left ^= (ks[STEPS * 12] as u32) | ((ks[STEPS * 12 + 1] as u32) << 16);
-    right ^= (ks[STEPS * 12 + 2] as u32) | ((ks[STEPS * 12 + 3] as u32) << 16);
-    LittleEndian::write_u32(&mut block[0..], left);
-    LittleEndian::write_u32(&mut block[4..], right);
+    for b in 0..2 {
+        let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ks[j];
+        j += 1;
+        LittleEndian::write_u32(&mut block[4 * b..], tmp);
+    }
 }
 
 pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
