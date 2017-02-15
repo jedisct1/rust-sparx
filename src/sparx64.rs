@@ -16,7 +16,7 @@ fn spec_key(left: &mut u16, right: &mut u16) {
     *right = (*right).rotate_left(2) ^ *left;
 }
 
-pub fn key_schedule(key: &[u8; KEY_SIZE]) -> KeySchedule {
+pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     let mut ks = [0u16; STEPS * 12 + 4];
     for (i, subkey) in ks.iter_mut().enumerate().take(6) {
         *subkey = LittleEndian::read_u16(&key[i * 2..]);
@@ -80,15 +80,15 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     LittleEndian::write_u32(&mut block[4..], right);
 }
 
-pub fn encrypt_ctr(buf: &mut [u8], key: &[u8; KEY_SIZE], nonce: &[u8; NONCE_SIZE]) {
+pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
     if buf.is_empty() {
         return;
     }
     let mut key2 = [0u8; KEY_SIZE];
-    for (i, &x) in key.iter().enumerate() {        
+    for (i, &x) in key.iter().enumerate() {
         key2[i] = x ^ nonce[4 + i];
     }
-    let ks = key_schedule(&key2);
+    let ks = key_schedule_encrypt(&key2);
     let full_blocks_count = (buf.len() / BLOCK_SIZE) as u64;
     let mut ib = [0u8; BLOCK_SIZE];
     let mut n = 0;
@@ -109,4 +109,35 @@ pub fn encrypt_ctr(buf: &mut [u8], key: &[u8; KEY_SIZE], nonce: &[u8; NONCE_SIZE
             buf[n + j] ^= ob
         }
     }
+}
+
+pub fn decrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
+    encrypt_ctr(buf, nonce, key)
+}
+
+#[test]
+fn test_vector() {
+    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
+                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
+    let mut block: [u8; BLOCK_SIZE] = [0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xcd];
+    let ks = key_schedule_encrypt(&key);
+    encrypt_block(&mut block, &ks);
+    assert_eq!([0xbe, 0x2b, 0x52, 0xf1, 0xf5, 0x01, 0x98, 0x5f], block);
+}
+
+#[test]
+fn test_ctr() {
+    let nonce: [u8; NONCE_SIZE] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                                   19, 20];
+    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
+                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
+    let input = b"The quick brown fox jumps over the lazy dog";
+    let mut buf = input.to_vec();
+    let expected: [u8; 43] = [219, 13, 239, 221, 244, 204, 168, 236, 26, 35, 237, 153, 212, 69,
+                              20, 70, 29, 84, 131, 31, 39, 107, 91, 149, 216, 14, 65, 237, 67,
+                              149, 55, 73, 249, 94, 132, 5, 243, 108, 17, 153, 247, 147, 113];
+    encrypt_ctr(&mut buf, &nonce, &key);
+    assert_eq!(buf[..], expected[..]);
+    decrypt_ctr(&mut buf, &nonce, &key);
+    assert_eq!(buf[..], input[..]);
 }
