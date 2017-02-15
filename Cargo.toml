@@ -1,0 +1,13 @@
+[package]
+name = "sparx"
+version = "0.1.0"
+authors = ["Frank Denis <github@pureftpd.org>"]
+
+[dependencies]
+byteorder = { version = "1", default-features = false }
+clippy = {version = "~0", optional = true}
+
+[profile.release]
+lto = true
+panic = "abort"
+opt-level = 3
