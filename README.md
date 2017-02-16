@@ -1,4 +1,4 @@
-# SPARX block cipher implementation for Rust
+# SPARX block ciphers implementations for Rust
 
 [SPARX](https://www.cryptolux.org/index.php/SPARX) is a family of lightweight block ciphers allowing small processors to securely encrypt information for a fraction of the cost a standard algorithm would require.
 
@@ -48,6 +48,6 @@ encrypt_ctr(&mut buf, &nonce, &key);
 decrypt_ctr(&mut buf, &nonce, &key);
 ```
 
-## References
+# References
 
 * [Design Strategies for ARX with Provable Bounds: SPARX and LAX](https://eprint.iacr.org/2016/984.pdf) (Daniel Dinu, Léo Perrin, Aleksei Udovenko, Vesselin Velichkov, Johann Großschädl, Alex Biryukov).
