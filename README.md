@@ -25,8 +25,9 @@ let mut block: [u8; BLOCK_SIZE] = [0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xc
 let ks = key_schedule_encrypt(&key); // key schedule - can be reused with multiple blocks
 encrypt_block(&mut block, &ks);
 // ...
-decrypt_block(&mut block, &ks);
 ```
+
+`decrypt_block()` is not implemented yet.
 
 ## Encryption of an arbitrary-sized buffer
 
