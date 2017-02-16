@@ -1,3 +1,5 @@
+//! SPARX-64/128 block cipher.
+
 use byteorder::{ByteOrder, LittleEndian};
 
 pub const BLOCK_SIZE: usize = 8;

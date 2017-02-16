@@ -1,3 +1,5 @@
+//! SPARX-128/128 block cipher.
+
 use byteorder::{ByteOrder, LittleEndian};
 
 pub const BLOCK_SIZE: usize = 16;
@@ -34,6 +36,7 @@ fn key_perm(k: &mut [u32; 4], c: u16) {
     k[0] = tmp;
 }
 
+/// Compute the key schedule from the master key `key`
 pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     let mut ks = [0u32; ROUNDS_PER_STEP * (4 * STEPS + 1)];
     let mut k = [0u32; 4];
@@ -52,6 +55,7 @@ pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     ks
 }
 
+/// Encrypt a single block `block` using the key schedule `ks`
 pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     let mut ksi = ks.iter();
     for _ in 0..STEPS {
@@ -84,6 +88,7 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     }
 }
 
+/// Encrypt an arbitrary-long message `buf` using SPARX in counter mode with the nonce `nonce` and the master key `key`.
 pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
     if buf.is_empty() {
         return;
@@ -122,6 +127,7 @@ pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE
     }
 }
 
+/// Decrypt an arbitrary-long message `buf` using SPARX in counter mode with the nonce `nonce` and the master key `key`.
 pub fn decrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
     encrypt_ctr(buf, nonce, key)
 }
