@@ -15,6 +15,8 @@ To sum up, SPARX has:
 
 This crate implements SPARX-64/128 (64 bit block size, 128 bit key) in the `sparx64` module and SPARX-128/128 (128 bit block size, 128 bit key) in the `sparx128` module.
 
+It doesn't require the Rust standard library.
+
 ## Encryption of a single block
 ```rust
 let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
