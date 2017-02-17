@@ -43,6 +43,7 @@ fn key_perm(k: &mut [u32; 4], c: u16) {
     k[0] = tmp;
 }
 
+/// Compute the key schedule from the master key `key`
 pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     let mut ks = [0u32; ROUNDS_PER_STEP * (2 * STEPS + 1)];
     let mut k = [0u32; 4];
@@ -61,6 +62,12 @@ pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     ks
 }
 
+/// Compute the key schedule from the master key `key`, for decryption
+pub fn key_schedule_decrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
+    key_schedule_encrypt(key)
+}
+
+/// Encrypt a single block `block` using the key schedule `ks`
 pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     let mut ksi = ks.iter();
     for _ in 0..STEPS {
@@ -84,6 +91,7 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     }
 }
 
+/// Decrypt a single block `block` using the key schedule `ks`
 pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     let mut ksi = ks.iter().rev().skip(1);
     for b in (0..2).rev() {
@@ -91,13 +99,12 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
         LittleEndian::write_u32(&mut block[4 * b..], tmp);
     }
     for _ in 0..STEPS {
-        let mut x1 = LittleEndian::read_u32(&block[4 * 0..]);
+        let x1 = LittleEndian::read_u32(&block[4 * 0..]);
         let x0 = LittleEndian::read_u32(&block[4 * 1..]);
         let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
-        x1 ^= x0 ^ tmp;
         LittleEndian::write_u32(&mut block[4 * 0..], x0);
-        LittleEndian::write_u32(&mut block[4 * 1..], x1);
+        LittleEndian::write_u32(&mut block[4 * 1..], x0 ^ x1 ^ tmp);
         for b in (0..2).rev() {
             for _ in 0..ROUNDS_PER_STEP {
                 let mut tmp = LittleEndian::read_u32(&block[4 * b..]);
@@ -108,6 +115,7 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     }
 }
 
+/// Encrypt an arbitrary-long message `buf` using SPARX in counter mode with the nonce `nonce` and the master key `key`.
 pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
     if buf.is_empty() {
         return;

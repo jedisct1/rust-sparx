@@ -30,7 +30,7 @@ encrypt_block(&mut block, &ks);
 `decrypt_block()` performs the inverse operation:
 ```rust
 let ks = key_schedule_decrypt(&key); // key schedule - can be reused with multiple blocks
-decryptt_block(&mut block, &ks);
+decrypt_block(&mut block, &ks);
 ```
 
 ## Encryption of an arbitrary-sized buffer

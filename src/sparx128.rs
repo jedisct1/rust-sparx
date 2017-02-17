@@ -22,6 +22,15 @@ fn spec_key(k: &mut u32) {
 }
 
 #[inline]
+fn spec_key_inv(k: &mut u32) {
+    let mut left = *k as u16;
+    let mut right = (*k >> 16) as u16;
+    right = (right ^ left).rotate_right(2);
+    left = left.wrapping_sub(right).rotate_left(7);
+    *k = (left as u32) | ((right as u32) << 16)
+}
+
+#[inline]
 fn key_perm(k: &mut [u32; 4], c: u16) {
     spec_key(&mut k[0]);
     k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32) |
@@ -55,6 +64,11 @@ pub fn key_schedule_encrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
     ks
 }
 
+/// Compute the key schedule from the master key `key`, for decryption
+pub fn key_schedule_decrypt(key: &[u8; KEY_SIZE]) -> KeySchedule {
+    key_schedule_encrypt(key)
+}
+
 /// Encrypt a single block `block` using the key schedule `ks`
 pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     let mut ksi = ks.iter();
@@ -85,6 +99,39 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     for b in 0..4 {
         let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ksi.next().unwrap();
         LittleEndian::write_u32(&mut block[4 * b..], tmp);
+    }
+}
+
+/// Decrypt a single block `block` using the key schedule `ks`
+pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
+    let mut ksi = ks.iter().rev().skip(1);
+    for b in (0..4).rev() {
+        let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ksi.next().unwrap();
+        LittleEndian::write_u32(&mut block[4 * b..], tmp);
+    }
+    for _ in 0..STEPS {
+        let x0 = LittleEndian::read_u32(&block[4 * 0..]);
+        let x1 = LittleEndian::read_u32(&block[4 * 1..]);
+        let mut x2 = LittleEndian::read_u32(&block[4 * 2..]);
+        let mut x3 = LittleEndian::read_u32(&block[4 * 3..]);
+        let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16))
+            .rotate_left(8);
+        let tmp = (tmp as u32) | ((tmp as u32) << 16);
+        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32) |
+              ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32) |
+              ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+        LittleEndian::write_u32(&mut block[4 * 0..], x2);
+        LittleEndian::write_u32(&mut block[4 * 1..], x3);
+        LittleEndian::write_u32(&mut block[4 * 2..], x0);
+        LittleEndian::write_u32(&mut block[4 * 3..], x1);
+        for b in (0..4).rev() {
+            for _ in 0..ROUNDS_PER_STEP {
+                let mut tmp = LittleEndian::read_u32(&block[4 * b..]);
+                spec_key_inv(&mut tmp);
+                LittleEndian::write_u32(&mut block[4 * b..], tmp ^ ksi.next().unwrap());
+            }
+        }
     }
 }
 
