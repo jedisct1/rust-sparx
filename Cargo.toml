@@ -5,7 +5,7 @@ license = "ISC"
 name = "sparx"
 description = "SPARX block ciphers implementations"
 repository = "https://github.com/jedisct1/rust-sparx"
-version = "0.1.0"
+version = "0.1.1"
 categories = ["algorithms", "cryptography"]
 
 [dependencies]
