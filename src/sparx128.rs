@@ -104,16 +104,16 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
 
 /// Decrypt a single block `block` using the key schedule `ks`
 pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
-    let mut ksi = ks.iter().rev().skip(1);
+    let mut ksi = ks.iter().rev();
     for b in (0..4).rev() {
         let tmp = LittleEndian::read_u32(&block[4 * b..]) ^ ksi.next().unwrap();
         LittleEndian::write_u32(&mut block[4 * b..], tmp);
     }
     for _ in 0..STEPS {
-        let x0 = LittleEndian::read_u32(&block[4 * 0..]);
-        let x1 = LittleEndian::read_u32(&block[4 * 1..]);
-        let mut x2 = LittleEndian::read_u32(&block[4 * 2..]);
-        let mut x3 = LittleEndian::read_u32(&block[4 * 3..]);
+        let x0 = LittleEndian::read_u32(&block[4 * 2..]);
+        let x1 = LittleEndian::read_u32(&block[4 * 3..]);
+        let mut x2 = LittleEndian::read_u32(&block[4 * 0..]);
+        let mut x3 = LittleEndian::read_u32(&block[4 * 1..]);
         let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16))
             .rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
@@ -121,10 +121,10 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
               ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
         x3 = ((((x3 as u16) ^ (x0 as u16)) as u32) |
               ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
-        LittleEndian::write_u32(&mut block[4 * 0..], x2);
-        LittleEndian::write_u32(&mut block[4 * 1..], x3);
-        LittleEndian::write_u32(&mut block[4 * 2..], x0);
-        LittleEndian::write_u32(&mut block[4 * 3..], x1);
+        LittleEndian::write_u32(&mut block[4 * 0..], x0);
+        LittleEndian::write_u32(&mut block[4 * 1..], x1);
+        LittleEndian::write_u32(&mut block[4 * 2..], x2);
+        LittleEndian::write_u32(&mut block[4 * 3..], x3);
         for b in (0..4).rev() {
             for _ in 0..ROUNDS_PER_STEP {
                 let mut tmp = LittleEndian::read_u32(&block[4 * b..]);
@@ -186,10 +186,13 @@ fn test_vector() {
     let mut block: [u8; BLOCK_SIZE] = [0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xcd, 0xdc, 0xfe,
                                        0x98, 0xba, 0x54, 0x76, 0x10, 0x32];
     let ks = key_schedule_encrypt(&key);
+    let block2 = block;
     encrypt_block(&mut block, &ks);
     assert_eq!([0xee, 0x1c, 0x40, 0x75, 0xbf, 0x7d, 0xd8, 0x23, 0xee, 0xe0, 0x97, 0x15, 0x28,
                 0xf4, 0xd8, 0x52],
                block);
+    decrypt_block(&mut block, &ks);
+    assert_eq!(block2, block);
 }
 
 #[test]
