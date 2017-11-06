@@ -33,8 +33,8 @@ fn spec_key_inv(k: &mut u32) {
 #[inline]
 fn key_perm(k: &mut [u32; 4], c: u16) {
     spec_key(&mut k[0]);
-    k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32) |
-           (((k[1] >> 16) as u16).wrapping_add((k[0] >> 16) as u16) as u32) << 16;
+    k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32)
+        | (((k[1] >> 16) as u16).wrapping_add((k[0] >> 16) as u16) as u32) << 16;
     k[3] = ((k[3] as u16) as u32) | (((k[3] >> 16) as u16).wrapping_add(c) as u32) << 16;
     let tmp = k[3];
     k[3] = k[2];
@@ -153,8 +153,10 @@ pub fn decrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE
 
 #[test]
 fn test_vector() {
-    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
-                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
+    let key: [u8; KEY_SIZE] = [
+        0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb, 0xaa, 0xdd, 0xcc, 0xff,
+        0xee,
+    ];
     let mut block: [u8; BLOCK_SIZE] = [0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xcd];
     let ks = key_schedule_encrypt(&key);
     let block2 = block;
@@ -166,15 +168,20 @@ fn test_vector() {
 
 #[test]
 fn test_ctr() {
-    let nonce: [u8; NONCE_SIZE] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                                   19, 20];
-    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
-                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
+    let nonce: [u8; NONCE_SIZE] = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+    ];
+    let key: [u8; KEY_SIZE] = [
+        0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb, 0xaa, 0xdd, 0xcc, 0xff,
+        0xee,
+    ];
     let input = b"The quick brown fox jumps over the lazy dog";
     let mut buf = input.to_vec();
-    let expected: [u8; 43] = [219, 13, 239, 221, 244, 204, 168, 236, 26, 35, 237, 153, 212, 69,
-                              20, 70, 29, 84, 131, 31, 39, 107, 91, 149, 216, 14, 65, 237, 67,
-                              149, 55, 73, 249, 94, 132, 5, 243, 108, 17, 153, 247, 147, 113];
+    let expected: [u8; 43] = [
+        219, 13, 239, 221, 244, 204, 168, 236, 26, 35, 237, 153, 212, 69, 20, 70, 29, 84, 131, 31,
+        39, 107, 91, 149, 216, 14, 65, 237, 67, 149, 55, 73, 249, 94, 132, 5, 243, 108, 17, 153,
+        247, 147, 113,
+    ];
     encrypt_ctr(&mut buf, &nonce, &key);
     assert_eq!(buf[..], expected[..]);
     decrypt_ctr(&mut buf, &nonce, &key);

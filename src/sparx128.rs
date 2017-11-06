@@ -33,11 +33,13 @@ fn spec_key_inv(k: &mut u32) {
 #[inline]
 fn key_perm(k: &mut [u32; 4], c: u16) {
     spec_key(&mut k[0]);
-    k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32) |
-           (((k[1] >> 16) as u16).wrapping_add((k[0] >> 16) as u16) as u32) << 16;
+    k[1] = ((k[1] as u16).wrapping_add(k[0] as u16) as u32)
+        | (((k[1] >> 16) as u16).wrapping_add((k[0] >> 16) as u16) as u32) << 16;
     spec_key(&mut k[2]);
-    k[3] = ((k[3] as u16).wrapping_add(k[2] as u16) as u32) |
-           (((k[3] >> 16) as u16).wrapping_add((k[2] >> 16) as u16).wrapping_add(c) as u32) << 16;
+    k[3] = ((k[3] as u16).wrapping_add(k[2] as u16) as u32)
+        | (((k[3] >> 16) as u16)
+            .wrapping_add((k[2] >> 16) as u16)
+            .wrapping_add(c) as u32) << 16;
     let tmp = k[3];
     k[3] = k[2];
     k[2] = k[1];
@@ -84,13 +86,13 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
         let x1 = LittleEndian::read_u32(&block[4 * 1..]);
         let mut x2 = LittleEndian::read_u32(&block[4 * 2..]);
         let mut x3 = LittleEndian::read_u32(&block[4 * 3..]);
-        let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16))
-            .rotate_left(8);
+        let tmp =
+            ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
-        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32) |
-              ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
-        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32) |
-              ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32)
+            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32)
+            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
         LittleEndian::write_u32(&mut block[4 * 0..], x2);
         LittleEndian::write_u32(&mut block[4 * 1..], x3);
         LittleEndian::write_u32(&mut block[4 * 2..], x0);
@@ -114,13 +116,13 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
         let x1 = LittleEndian::read_u32(&block[4 * 3..]);
         let mut x2 = LittleEndian::read_u32(&block[4 * 0..]);
         let mut x3 = LittleEndian::read_u32(&block[4 * 1..]);
-        let tmp = ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16))
-            .rotate_left(8);
+        let tmp =
+            ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
-        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32) |
-              ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
-        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32) |
-              ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x2 = ((((x2 as u16) ^ (x1 as u16)) as u32)
+            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+        x3 = ((((x3 as u16) ^ (x0 as u16)) as u32)
+            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
         LittleEndian::write_u32(&mut block[4 * 0..], x0);
         LittleEndian::write_u32(&mut block[4 * 1..], x1);
         LittleEndian::write_u32(&mut block[4 * 2..], x2);
@@ -181,31 +183,44 @@ pub fn decrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE
 
 #[test]
 fn test_vector() {
-    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
-                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
-    let mut block: [u8; BLOCK_SIZE] = [0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xcd, 0xdc, 0xfe,
-                                       0x98, 0xba, 0x54, 0x76, 0x10, 0x32];
+    let key: [u8; KEY_SIZE] = [
+        0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb, 0xaa, 0xdd, 0xcc, 0xff,
+        0xee,
+    ];
+    let mut block: [u8; BLOCK_SIZE] = [
+        0x23, 0x01, 0x67, 0x45, 0xab, 0x89, 0xef, 0xcd, 0xdc, 0xfe, 0x98, 0xba, 0x54, 0x76, 0x10,
+        0x32,
+    ];
     let ks = key_schedule_encrypt(&key);
     let block2 = block;
     encrypt_block(&mut block, &ks);
-    assert_eq!([0xee, 0x1c, 0x40, 0x75, 0xbf, 0x7d, 0xd8, 0x23, 0xee, 0xe0, 0x97, 0x15, 0x28,
-                0xf4, 0xd8, 0x52],
-               block);
+    assert_eq!(
+        [
+            0xee, 0x1c, 0x40, 0x75, 0xbf, 0x7d, 0xd8, 0x23, 0xee, 0xe0, 0x97, 0x15, 0x28, 0xf4,
+            0xd8, 0x52,
+        ],
+        block
+    );
     decrypt_block(&mut block, &ks);
     assert_eq!(block2, block);
 }
 
 #[test]
 fn test_ctr() {
-    let nonce: [u8; NONCE_SIZE] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                                   19, 20];
-    let key: [u8; KEY_SIZE] = [0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb,
-                               0xaa, 0xdd, 0xcc, 0xff, 0xee];
+    let nonce: [u8; NONCE_SIZE] = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+    ];
+    let key: [u8; KEY_SIZE] = [
+        0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb, 0xaa, 0xdd, 0xcc, 0xff,
+        0xee,
+    ];
     let input = b"The quick brown fox jumps over the lazy dog";
     let mut buf = input.to_vec();
-    let expected: [u8; 43] = [187, 164, 175, 197, 150, 51, 7, 71, 250, 16, 102, 26, 154, 89, 226,
-                              186, 171, 49, 0, 228, 255, 249, 53, 223, 223, 97, 25, 144, 13, 185,
-                              170, 216, 79, 219, 40, 137, 95, 164, 73, 201, 65, 42, 58];
+    let expected: [u8; 43] = [
+        187, 164, 175, 197, 150, 51, 7, 71, 250, 16, 102, 26, 154, 89, 226, 186, 171, 49, 0, 228,
+        255, 249, 53, 223, 223, 97, 25, 144, 13, 185, 170, 216, 79, 219, 40, 137, 95, 164, 73, 201,
+        65, 42, 58,
+    ];
     encrypt_ctr(&mut buf, &nonce, &key);
     assert_eq!(buf[..], expected[..]);
     decrypt_ctr(&mut buf, &nonce, &key);
