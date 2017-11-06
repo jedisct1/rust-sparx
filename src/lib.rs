@@ -1,6 +1,6 @@
 //! A implementation of the SPARX block cipher for Rust.
 //!
-//! See https://www.cryptolux.org/index.php/SPARX for more information about SPARX.
+//! See <https://www.cryptolux.org/index.php/SPARX> for more information about SPARX.
 
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]

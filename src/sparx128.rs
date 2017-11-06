@@ -150,9 +150,7 @@ pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE
     let full_blocks_count = (buf.len() / BLOCK_SIZE) as u64;
     let mut ib = [0u8; BLOCK_SIZE];
     let mut nc = [0u8; BLOCK_SIZE];
-    for i in 0..(BLOCK_SIZE - 6) {
-        nc[i] = nonce[i];
-    }
+    nc[..(BLOCK_SIZE - 6)].clone_from_slice(&nonce[..(BLOCK_SIZE - 6)]);
     let mut n = 0;
     for i in 0..full_blocks_count {
         ib.copy_from_slice(&nc);
