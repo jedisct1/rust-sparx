@@ -1,11 +1,11 @@
 #![feature(test)]
 
-extern crate sparx;
 extern crate test;
 
 mod benches64 {
-    use sparx::sparx64::{encrypt_block, encrypt_ctr, key_schedule_encrypt, BLOCK_SIZE, KEY_SIZE,
-                         NONCE_SIZE};
+    use sparx::sparx64::{
+        encrypt_block, encrypt_ctr, key_schedule_encrypt, BLOCK_SIZE, KEY_SIZE, NONCE_SIZE,
+    };
     use test::Bencher;
 
     #[bench]
@@ -64,8 +64,9 @@ mod benches64 {
 }
 
 mod benches128 {
-    use sparx::sparx128::{encrypt_block, encrypt_ctr, key_schedule_encrypt, BLOCK_SIZE, KEY_SIZE,
-                          NONCE_SIZE};
+    use sparx::sparx128::{
+        encrypt_block, encrypt_ctr, key_schedule_encrypt, BLOCK_SIZE, KEY_SIZE, NONCE_SIZE,
+    };
     use test::Bencher;
 
     #[bench]

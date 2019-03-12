@@ -39,7 +39,8 @@ fn key_perm(k: &mut [u32; 4], c: u16) {
     k[3] = ((k[3] as u16).wrapping_add(k[2] as u16) as u32)
         | (((k[3] >> 16) as u16)
             .wrapping_add((k[2] >> 16) as u16)
-            .wrapping_add(c) as u32) << 16;
+            .wrapping_add(c) as u32)
+            << 16;
     let tmp = k[3];
     k[3] = k[2];
     k[2] = k[1];
@@ -90,9 +91,11 @@ pub fn encrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
             ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
         x2 = ((((x2 as u16) ^ (x1 as u16)) as u32)
-            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16)
+            ^ tmp;
         x3 = ((((x3 as u16) ^ (x0 as u16)) as u32)
-            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16)
+            ^ tmp;
         LittleEndian::write_u32(&mut block[4 * 0..], x2);
         LittleEndian::write_u32(&mut block[4 * 1..], x3);
         LittleEndian::write_u32(&mut block[4 * 2..], x0);
@@ -120,9 +123,11 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
             ((x0 as u16) ^ ((x0 >> 16) as u16) ^ (x1 as u16) ^ ((x1 >> 16) as u16)).rotate_left(8);
         let tmp = (tmp as u32) | ((tmp as u32) << 16);
         x2 = ((((x2 as u16) ^ (x1 as u16)) as u32)
-            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16) ^ tmp;
+            | ((((x2 >> 16) as u16) ^ ((x0 >> 16) as u16)) as u32) << 16)
+            ^ tmp;
         x3 = ((((x3 as u16) ^ (x0 as u16)) as u32)
-            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16) ^ tmp;
+            | ((((x3 >> 16) as u16) ^ ((x1 >> 16) as u16)) as u32) << 16)
+            ^ tmp;
         LittleEndian::write_u32(&mut block[4 * 0..], x0);
         LittleEndian::write_u32(&mut block[4 * 1..], x1);
         LittleEndian::write_u32(&mut block[4 * 2..], x2);
@@ -206,7 +211,7 @@ fn test_vector() {
 #[test]
 fn test_ctr() {
     let nonce: [u8; NONCE_SIZE] = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
     ];
     let key: [u8; KEY_SIZE] = [
         0x11, 0x00, 0x33, 0x22, 0x55, 0x44, 0x77, 0x66, 0x99, 0x88, 0xbb, 0xaa, 0xdd, 0xcc, 0xff,
