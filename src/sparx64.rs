@@ -115,7 +115,8 @@ pub fn decrypt_block(block: &mut [u8; BLOCK_SIZE], ks: &KeySchedule) {
     }
 }
 
-/// Encrypt an arbitrary-long message `buf` using SPARX in counter mode with the nonce `nonce` and the master key `key`.
+/// Encrypt an arbitrary-long message `buf` using SPARX in counter mode with the
+/// nonce `nonce` and the master key `key`.
 pub fn encrypt_ctr(buf: &mut [u8], nonce: &[u8; NONCE_SIZE], key: &[u8; KEY_SIZE]) {
     if buf.is_empty() {
         return;
