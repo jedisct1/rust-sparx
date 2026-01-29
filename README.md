@@ -39,7 +39,7 @@ This uses SPARX in counter mode as well as a 160-bit nonce in order to encrypt m
 
 The internal counter size for this construction with SPARX-64/128 is 32 bits (no more than 32 GB should be encrypted with the same `(key, nonce)` tuple) and 48 bits with SPARX-128/128 (allowing up to 4 PB to be encrypted with the same `(key, nonce)` tuple).
 
-The nonce is large enough to be randomly chosen; the probably of a collision to occur will be negligible.
+The nonce is large enough to be randomly chosen; the probability of a collision to occur will be negligible.
 
 Note that this construction does not add any authentication tags to the message.
 
