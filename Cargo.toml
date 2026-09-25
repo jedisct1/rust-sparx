@@ -1,9 +1,9 @@
 [package]
 authors = ["Frank Denis <github@pureftpd.org>"]
-keywords = ["crypto","hash","siphash"]
+keywords = ["sparx", "cipher", "encryption", "arx", "no-std"]
 license = "ISC"
 name = "sparx"
-description = "SPARX block ciphers implementations"
+description = "SPARX lightweight block ciphers and CTR stream encryption in pure Rust, with no_std support"
 repository = "https://github.com/jedisct1/rust-sparx"
 version = "0.1.2"
 categories = ["algorithms", "cryptography"]
