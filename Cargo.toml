@@ -5,7 +5,7 @@ license = "ISC"
 name = "sparx"
 description = "SPARX lightweight block ciphers and CTR stream encryption in pure Rust, with no_std support"
 repository = "https://github.com/jedisct1/rust-sparx"
-version = "0.1.2"
+version = "0.1.3"
 categories = ["algorithms", "cryptography"]
 edition = "2018"
 
